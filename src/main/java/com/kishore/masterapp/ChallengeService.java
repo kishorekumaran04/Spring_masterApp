@@ -1,27 +1,29 @@
 package com.kishore.masterapp;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 @Service
 public class ChallengeService {
 	
-	private List<Challenge> challenges = new ArrayList<>();
 	private Long nextId = 1L;
 	
-	public ChallengeService() {
+	ChallengeRepository challengeRepository;
+	
+	public ChallengeService(ChallengeRepository challengeRepository) {
+		this.challengeRepository = challengeRepository;
 	}
 	
 	public List<Challenge> getAllChallenges() {
-		return challenges;
+		return challengeRepository.findAll();
 	}
 	
 	public boolean addChallenge(Challenge challenge) {
 		if(challenge != null) {
 			challenge.setId(nextId++);
-			challenges.add(challenge);
+			challengeRepository.save(challenge);
 			return true; 
 		}
 		else
@@ -29,27 +31,31 @@ public class ChallengeService {
 	}
 
 	public Challenge getChallenges(String month) {
-		for(Challenge ch: challenges) {
-			if(ch.getMonth().equalsIgnoreCase(month))
-				return ch;
-		}
-		return null;
+		Optional<Challenge> challenge = challengeRepository.findByMonthIgnoreCase(month);
+		
+		return challenge.orElse(null);
 	}
 
 	public boolean updateChallenge(Long id, Challenge updatedChallenge) {
 
-		for (Challenge ch: challenges) {
-			if (ch.getId().equals(id)) {
-				ch.setMonth(updatedChallenge.getMonth());
-				ch.setDescription(updatedChallenge.getDescription());
-				return true;
-			}
+		Optional<Challenge> challenge = challengeRepository.findById(id);
+		if (challenge.isPresent()) {
+			Challenge challengeToUpdate = challenge.get();
+			challengeToUpdate.setMonth(updatedChallenge.getMonth());
+			challengeToUpdate.setDescription(updatedChallenge.getDescription());
+			challengeRepository.save(challengeToUpdate);
+			return true;
 		}
 		return false;
 	}
 
 	public boolean deleteChallenge(Long id) {
-		return challenges.removeIf(challenge -> challenge.getId().equals(id));
+		Optional<Challenge> challenge = challengeRepository.findById(id);
+		if (challenge.isPresent()) {
+			challengeRepository.deleteById(id);
+			return true;
+		}
+		return false;
 	}
 
 }
